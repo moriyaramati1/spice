@@ -17,7 +17,7 @@ def seed_users(session: Session):
         User(name=f"user_{i}", is_group=False)
         for i in range(USERS)
     ]
-    db.session.bulk_save_objects(users)
+    db.session.add_all(users)
     db.session.commit()
     return users
 
@@ -26,6 +26,7 @@ def seed_projects(session: Session, users):
     projects = []
     for i in range(PROJECTS):
         owner = random.choice(users)
+        print("pr--", owner.id)
         projects.append(
             Project(
                 name=f"project_{i}",
@@ -34,12 +35,12 @@ def seed_projects(session: Session, users):
         )
 
         if len(projects) >= BATCH_SIZE:
-            db.session.bulk_save_objects(projects)
+            db.session.add_all(projects)
             db.session.commit()
             projects.clear()
 
     if projects:
-        db.session.bulk_save_objects(projects)
+        db.session.add_all(projects)
         db.session.commit()
 
 
@@ -59,7 +60,7 @@ def seed_resource_pool_groups(session: Session):
         )
         groups.append(g)
 
-    db.session.bulk_save_objects(groups)
+    db.session.add_all(groups)
     db.session.commit()
 
     levels[0] = db.session.query(ResourcePoolGroup.id).filter(
@@ -89,14 +90,14 @@ def seed_resource_pool_groups(session: Session):
                 created += 1
 
                 if len(groups) >= BATCH_SIZE:
-                    db.session.bulk_save_objects(groups)
+                    db.session.add_all(groups)
                     db.session.commit()
                     groups.clear()
 
         depth += 1
 
     if groups:
-        db.session.bulk_save_objects(groups)
+        db.session.add_all(groups)
         db.session.commit()
 
     # fetch all leaves
