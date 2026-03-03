@@ -2,8 +2,8 @@ import random
 from sqlalchemy.orm import Session
 from db.db_app import db
 from db.user import User
-from db.project import Project
-from db.resource_pool_group import ResourcePoolGroup
+
+
 
 USERS = 100
 PROJECTS = 100_000
@@ -23,6 +23,8 @@ def seed_users(session: Session):
 
 
 def seed_projects(session: Session, users):
+    from db.project import Project
+
     projects = []
     for i in range(PROJECTS):
         owner = random.choice(users)
@@ -45,6 +47,10 @@ def seed_projects(session: Session, users):
 
 
 def seed_resource_pool_groups(session: Session):
+    from db.resource_pool_group import ResourcePoolGroup
+
+    from db.project import Project
+
     groups = []
 
     # level -> ids
