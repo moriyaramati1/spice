@@ -1,4 +1,3 @@
-import grpc
 from authzed.api.v1 import (
     LookupResourcesRequest,
     LookupSubjectsRequest,
@@ -7,8 +6,7 @@ from authzed.api.v1 import (
     InsecureClient,
     Consistency, WriteRelationshipsRequest, RelationshipUpdate, Relationship, WatchRequest, WriteSchemaRequest,
 )
-from authzed.api.v1.permission_service_pb2_grpc import PermissionsServiceStub
-from authzed.api.v1.watch_service_pb2_grpc import WatchServiceStub
+
 from authzed.api.v1.watch_service_pb2 import WatchRequest
 
 from redis_client import redis_client
@@ -18,13 +16,8 @@ class SpiceDBClient:
     def __init__(self, endpoint: str, token: str = None, insecure: bool = True):
         self.metadata = [("authorization", "Bearer spicy")]
         self.client = InsecureClient(endpoint,token)
-        # self.client = PermissionsServiceStub(self.channel)
-        # self.watch_client = WatchServiceStub(self.client)
 
 
-    # ---------------------------------------------
-    # Consistency Builder
-    # ---------------------------------------------
     def build_consistency(self, mode="minimize_latency", zed_token=None):
         if mode == "fully_consistent":
             return Consistency(fully_consistent=True)
@@ -45,9 +38,6 @@ class SpiceDBClient:
 
         return Consistency(minimize_latency=True)
 
-    # ---------------------------------------------
-    # LookupResources with Dynamic Consistency
-    # ---------------------------------------------
     def lookup_resources(
         self,
         resource_type,
@@ -72,9 +62,7 @@ class SpiceDBClient:
         for response in self.client.LookupResources(request):
             yield response.resource_object_id
 
-    # ---------------------------------------------
-    # LookupSubjects with Dynamic Consistency
-    # ---------------------------------------------
+
     def lookup_subjects(
         self,
         resource_type,
@@ -175,53 +163,18 @@ grpc.channel_ready_future(channel).result(timeout=5)  # should succeed
 print("Channel ready")
 
 spice_handler = SpiceDBClient("localhost:50051","spicy")
-schema = """
-definition user {}
 
-definition document {
-    relation viewer: user
-}
-"""
 
-# Write schema to SpiceDB
-resp = spice_handler.client.WriteSchema(WriteSchemaRequest(schema=schema))
-print("Schema update response:", resp)
+for key in redis_client.scan_iter("*"):
+    values = redis_client.smembers(key)
+    print(f"{key} -> {values}")
 
-relationships = [
-    {
-        "resource_type": "document",
-        "resource_id": f"doc{i}",
-        "relation": "viewer",
-        "subject_type": "user",
-        "subject_id": "user1",
-    }
-    for i in range(10)
-]
-
-spice_handler.bulk_write_relationships(relationships)
-
-# redis_client.flushdb()
-
-print('get from redis')
-print(redis_client.smembers('user1:viewer'))
-print(redis_client.smembers('doc7:viewer_users'))
-
-# for key in redis_client.scan_iter("*"):
-#     values = redis_client.smembers(key)
-#     print(f"{key} -> {values}")
 
 for event in spice_handler.watch_relationships():
     print("New change detected")
-
     for update in event.updates:
         relation = update.relationship
-        redis_client.sadd(f"{relation.subject.object.object_id}:{relation.relation}", relation.resource.object_id)
-        redis_client.sadd(f"{relation.resource.object_id}:{relation.relation}_users", relation.subject.object.object_id)
+        redis_client.sadd(f"{relation.resource.object_type}:{relation.subject.object.object_id}:{relation.relation}", relation.resource.object_id)
 
-        # print(
-        #     f"Resource: {relation.resource.object_type}:{relation.resource.object_id} | "
-        #     f"Relation: {relation.relation} | "
-        #     f"Subject: {relation.subject.object.object_type}:{relation.subject.object.object_id}"
-        # )
 
 

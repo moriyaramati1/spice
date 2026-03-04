@@ -26,18 +26,38 @@ def seed_projects(session: Session, users):
     from db.project import Project
 
     projects = []
-    for i in range(PROJECTS):
-        owner = random.choice(users)
-        # print("pr--", owner.id)
+    owner = random.choice(users)
+    print('main owner',owner.id)
+
+    for i in range(PROJECTS // 2):
+        project = Project(
+                name=f"project_{i}")
         projects.append(
-            Project(
-                name=f"project_{i}",
-                owners=[owner.id],
-            )
+            project
         )
+        db.session.add(project)
+        db.session.flush()
+        project.owners = [owner.id],
 
         if len(projects) >= BATCH_SIZE:
-            db.session.add_all(projects)
+            # db.session.add_all(projects)
+            db.session.commit()
+            projects.clear()
+
+    for i in range(PROJECTS // 2):
+        owner = random.choice(users)
+
+        project = Project(
+            name=f"project_{i}")
+        projects.append(
+            project
+        )
+        db.session.add(project)
+        db.session.flush()
+        project.owners = [owner.id],
+
+        if len(projects) >= BATCH_SIZE:
+            # db.session.add_all(projects)
             db.session.commit()
             projects.clear()
 
@@ -60,11 +80,11 @@ def seed_resource_pool_groups(session: Session, users):
     default_root = ResourcePoolGroup(
             name=f"rpg_root_0",
             project_id=None,
-            parent_resource_pool_group_id=None,
-            owners=[owner.id]
+            parent_resource_pool_group_id=None
         )
-
     db.session.add(default_root)
+    db.session.flush()
+    default_root.owners = [owner.id]
     db.session.commit()
 
     # create roots
@@ -139,18 +159,13 @@ def seed_resource_pool_groups(session: Session, users):
                 "project_id": project_id,
             }
         )
+        rpg = db.session.query(ResourcePoolGroup).filter(ResourcePoolGroup.id == leaf_id)
+        rpg.project_id = project_id
 
-        if len(updates) >= BATCH_SIZE:
-            db.session.bulk_update_mappings(ResourcePoolGroup, updates)
-            db.session.commit()
-            updates.clear()
-
-    if updates:
-        db.session.bulk_update_mappings(ResourcePoolGroup, updates)
-        db.session.commit()
+    db.session.commit()
 
 
 def main_generate():
     users = seed_users(db.session)
     seed_projects(db.session, users)
-    seed_resource_pool_groups(db.session)
+    seed_resource_pool_groups(db.session,users)

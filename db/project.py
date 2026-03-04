@@ -1,4 +1,4 @@
-from authzed.api.v1 import RelationshipFilter, WriteRelationshipsRequest, RelationshipUpdate
+from authzed.api.v1 import RelationshipFilter, WriteRelationshipsRequest, RelationshipUpdate, ReadRelationshipsRequest
 from sqlalchemy import String, ForeignKey
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 
@@ -17,16 +17,14 @@ class Project(Base):
 
     @property
     def owners(self):
-        response = client_spice.client.ReadRelationships(
-            RelationshipFilter(
+        request = ReadRelationshipsRequest(relationship_filter = RelationshipFilter(
                 resource_type="project",
                 optional_resource_id=str(self.id),
                 optional_relation="owner",
-            )
-        )
+            ))
+        response = client_spice.client.ReadRelationships(request)
 
         owner_ids = []
-
         for rel in response:
             owner_ids.append(int(rel.relationship.subject.object.object_id))
 

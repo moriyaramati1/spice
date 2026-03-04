@@ -1,8 +1,9 @@
 from authzed.api.v1 import Relationship, ObjectReference, SubjectReference
 
 
-def make_owner_relationship(project_num: int, user_index: int, object_type: str = None) -> Relationship:
+def make_owner_relationship(project_num: int, user_index: list[int] | int, object_type: str = None) -> Relationship:
     object_type = object_type or "project"
+    user_index = user_index[0] if type(user_index) is list else user_index
     return Relationship(
         resource=ObjectReference(object_type=object_type, object_id=str(project_num)),
         relation="owner",

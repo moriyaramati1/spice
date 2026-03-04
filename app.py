@@ -1,7 +1,10 @@
+import time
+
 from authzed.api.v1 import InsecureClient, WriteSchemaRequest
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
+from query_example import get_projects
 from db.db_app import db
 from db.user import User
 from db.project import Project
@@ -50,24 +53,7 @@ schema = """
 
 
 spicedb_client.init_spicedb_client()
-
 spicedb_client.client.WriteSchema(WriteSchemaRequest(schema=schema))
-
-for event in spicedb_client.client.watch_relationships():
-    print("New change detected")
-
-    for update in event.updates:
-        relation = update.relationship
-        redis_client.sadd(f"{relation.subject.object.object_id}:{relation.relation}", relation.resource.object_id)
-        redis_client.sadd(f"{relation.resource.object_id}:{relation.relation}_users", relation.subject.object.object_id)
-
-        # print(
-        #     f"Resource: {relation.resource.object_type}:{relation.resource.object_id} | "
-        #     f"Relation: {relation.relation} | "
-        #     f"Subject: {relation.subject.object.object_type}:{relation.subject.object.object_id}"
-        # )
-
-
 
 # Create tables
 with app.app_context():
@@ -76,7 +62,7 @@ with app.app_context():
 
 @app.route("/")
 def hello():
-    projects = db.session.query(ResourcePoolGroup).all()
+    projects = db.session.query(Project).all()
     print(len(projects), " sum projects")
     return {"status": "ok", "message": "Tables created successfully"}
 #
@@ -87,5 +73,12 @@ def generate():
     return {"status": "ok", "message": "generation completed"}
 
 
+def execute_example():
+    start = time.perf_counter()
+    get_projects(db.session, 149, 'project', 'owner',0,'m')
+    end = time.perf_counter()
+    print("total",end - start)
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    #user_id 149
+    app.run(debug=False)
