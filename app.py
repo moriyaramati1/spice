@@ -6,6 +6,7 @@ from db.db_app import db
 from db.user import User
 from db.project import Project
 from db.resource_pool_group import ResourcePoolGroup
+from redis_client import redis_client
 from spicedb_test.client import spicedb_client
 
 from seed import main_generate
@@ -52,6 +53,21 @@ spicedb_client.init_spicedb_client()
 
 spicedb_client.client.WriteSchema(WriteSchemaRequest(schema=schema))
 
+for event in spicedb_client.client.watch_relationships():
+    print("New change detected")
+
+    for update in event.updates:
+        relation = update.relationship
+        redis_client.sadd(f"{relation.subject.object.object_id}:{relation.relation}", relation.resource.object_id)
+        redis_client.sadd(f"{relation.resource.object_id}:{relation.relation}_users", relation.subject.object.object_id)
+
+        # print(
+        #     f"Resource: {relation.resource.object_type}:{relation.resource.object_id} | "
+        #     f"Relation: {relation.relation} | "
+        #     f"Subject: {relation.subject.object.object_type}:{relation.subject.object.object_id}"
+        # )
+
+
 
 # Create tables
 with app.app_context():
@@ -60,8 +76,8 @@ with app.app_context():
 
 @app.route("/")
 def hello():
-    users = db.session.query(Project).first()
-    print(users.owners)
+    projects = db.session.query(ResourcePoolGroup).all()
+    print(len(projects), " sum projects")
     return {"status": "ok", "message": "Tables created successfully"}
 #
 @app.route("/generate")

@@ -46,7 +46,7 @@ def seed_projects(session: Session, users):
         db.session.commit()
 
 
-def seed_resource_pool_groups(session: Session):
+def seed_resource_pool_groups(session: Session, users):
     from db.resource_pool_group import ResourcePoolGroup
 
     from db.project import Project
@@ -55,10 +55,13 @@ def seed_resource_pool_groups(session: Session):
 
     # level -> ids
     levels: dict[int, list[int]] = {0: []}
+    owner = random.choice(users)
+    print(owner.name, owner.id)
     default_root = ResourcePoolGroup(
             name=f"rpg_root_0",
             project_id=None,
             parent_resource_pool_group_id=None,
+            owners=[owner.id]
         )
 
     db.session.add(default_root)

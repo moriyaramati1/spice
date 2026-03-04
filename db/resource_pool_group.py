@@ -1,10 +1,10 @@
-from authzed.api.v1 import RelationshipFilter
+from authzed.api.v1 import RelationshipFilter, RelationshipUpdate, WriteRelationshipsRequest
 from sqlalchemy import String, Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from spicedb_test.client import spicedb_client as client_spice
 from db.base import Base
-from db.utils import make_project_relationship
+from db.utils import make_project_relationship, make_owner_relationship
 
 
 class ResourcePoolGroup(Base):
@@ -105,3 +105,34 @@ class ResourcePoolGroup(Base):
                 subject_type="resource_pool_group",
                 subject_id=str(new_parent_id),
             )
+
+    @property
+    def owners(self):
+        response = client_spice.client.ReadRelationships(
+            RelationshipFilter(
+                resource_type="resource_pool_group",
+                optional_resource_id=str(self.id),
+                optional_relation="owner",
+            )
+        )
+
+        owner_ids = []
+
+        for rel in response:
+            owner_ids.append(int(rel.relationship.subject.object.object_id))
+
+        return owner_ids
+
+    @owners.setter
+    def owners(self, value: list[int]):
+        relations = []
+        for owner in value:
+            relations.append(
+                RelationshipUpdate(
+                    operation=RelationshipUpdate.OPERATION_TOUCH,
+                    relationship=make_owner_relationship(self.id, owner, object_type="resource_pool_group"),
+                )
+            )
+
+        request = WriteRelationshipsRequest(updates=relations)
+        client_spice.client.WriteRelationships(request)
