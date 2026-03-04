@@ -2,7 +2,7 @@ from authzed.api.v1 import RelationshipFilter
 from sqlalchemy import String, Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from spicedb_test.client import spicedb_client as client_spice, spicedb_client
+from spicedb_test.client import spicedb_client as client_spice
 from db.base import Base
 from db.utils import make_project_relationship
 
@@ -85,7 +85,7 @@ class ResourcePoolGroup(Base):
 
         # Remove old relation in SpiceDB
         if old_parent_id is not None and self.id is not None:
-            spicedb_client.delete_relationship(
+            client_spice.delete_relationship(
                 resource_type="resource_pool_group",
                 resource_id=str(self.id),
                 relation="parent",
@@ -98,7 +98,7 @@ class ResourcePoolGroup(Base):
 
         # Add new relation in SpiceDB
         if new_parent_id is not None and self.id is not None:
-            spicedb_client.write_relationship(
+            client_spice.write_relationship(
                 resource_type="resource_pool_group",
                 resource_id=str(self.id),
                 relation="parent",

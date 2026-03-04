@@ -60,8 +60,8 @@ with app.app_context():
 
 @app.route("/")
 def hello():
-    users = db.session.query(User).all()
-    print(users)
+    users = db.session.query(Project).first()
+    print(users.owners)
     return {"status": "ok", "message": "Tables created successfully"}
 #
 @app.route("/generate")

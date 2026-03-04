@@ -28,11 +28,11 @@ def seed_projects(session: Session, users):
     projects = []
     for i in range(PROJECTS):
         owner = random.choice(users)
-        print("pr--", owner.id)
+        # print("pr--", owner.id)
         projects.append(
             Project(
                 name=f"project_{i}",
-                responsible_team=owner.id,
+                owners=[owner.id],
             )
         )
 
@@ -55,14 +55,22 @@ def seed_resource_pool_groups(session: Session):
 
     # level -> ids
     levels: dict[int, list[int]] = {0: []}
+    default_root = ResourcePoolGroup(
+            name=f"rpg_root_0",
+            project_id=None,
+            parent_resource_pool_group_id=None,
+        )
+
+    db.session.add(default_root)
+    db.session.commit()
 
     # create roots
     root_count = 100
-    for i in range(root_count):
+    for i in range(1, root_count):
         g = ResourcePoolGroup(
             name=f"rpg_root_{i}",
             project_id=None,
-            parent_resource_pool_group_id=None,
+            parent_resource_pool_group_id=default_root.id,
         )
         groups.append(g)
 
@@ -70,7 +78,7 @@ def seed_resource_pool_groups(session: Session):
     db.session.commit()
 
     levels[0] = db.session.query(ResourcePoolGroup.id).filter(
-        ResourcePoolGroup.parent_resource_pool_group_id.is_(None)
+        ResourcePoolGroup._parent_resource_pool_group_id.is_not(None)
     ).all()
     levels[0] = [x[0] for x in levels[0]]
 
@@ -109,8 +117,8 @@ def seed_resource_pool_groups(session: Session):
     # fetch all leaves
     leaf_ids = db.session.query(ResourcePoolGroup.id).filter(
         ~ResourcePoolGroup.id.in_(
-            db.session.query(ResourcePoolGroup.parent_resource_pool_group_id)
-            .filter(ResourcePoolGroup.parent_resource_pool_group_id.isnot(None))
+            db.session.query(ResourcePoolGroup._parent_resource_pool_group_id)
+            .filter(ResourcePoolGroup._parent_resource_pool_group_id.is_not(None))
         )
     ).all()
 
