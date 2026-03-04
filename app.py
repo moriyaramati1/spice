@@ -28,22 +28,21 @@ schema = """
     }
 
     definition resource_pool_group {
-        relation owner: user
-        relation can_edit: user
-
-        permission direct_permission = owner
-        permission can_edit_permission = owner + can_edit
+      relation parent: resource_pool_group
+      relation owner: user | usergroup#member
+    
+      permission edit = parent->edit + owner      
     }
 
+
     definition project {
-        relation resource_pool_group: resource_pool_group
-        relation owner: user
-        relation editor: user 
-
-        // Logical link (not used for lookup)
-
-        // Runtime permission
-        permission edit = owner + editor
+      relation resource_pool_group: resource_pool_group
+      relation responsible_team: usergroup
+      relation owner: user | usergroup#member
+    
+      permission edit = owner + responsible_team->member + resource_pool_group->edit
+      permission create_deployment = owner + responsible_team->member
+      permission resources_editor = resource_pool_group->member 
     }
 
 """

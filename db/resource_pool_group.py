@@ -2,7 +2,7 @@ from authzed.api.v1 import RelationshipFilter
 from sqlalchemy import String, Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from spicedb_test.client import spicedb_client as client_spice
+from spicedb_test.client import spicedb_client as client_spice, spicedb_client
 from db.base import Base
 from db.utils import make_project_relationship
 
@@ -15,7 +15,8 @@ class ResourcePoolGroup(Base):
     _project_id: Mapped[int | None] = mapped_column("project_id", Integer, nullable=True)
 
     # self-referencing FK (tree)
-    parent_resource_pool_group_id: Mapped[int | None] = mapped_column(
+    _parent_resource_pool_group_id: Mapped[int | None] = mapped_column(
+        "parent_resource_pool_group_id",
         ForeignKey("resource_pool_group.id"),
         nullable=True,
     )
@@ -68,3 +69,39 @@ class ResourcePoolGroup(Base):
             relation = make_project_relationship(value, self.id)
 
             client_spice.ImportBulkRelationships([relation])
+
+    @property
+    def parent_resource_pool_group_id(self) -> int | None:
+        return self._parent_resource_pool_group_id
+
+    @parent_resource_pool_group_id.setter
+    def parent_resource_pool_group_id(self, new_parent_id: int | None):
+
+        old_parent_id = self._parent_resource_pool_group_id
+
+        # If nothing changed → do nothing
+        if old_parent_id == new_parent_id:
+            return
+
+        # Remove old relation in SpiceDB
+        if old_parent_id is not None and self.id is not None:
+            spicedb_client.delete_relationship(
+                resource_type="resource_pool_group",
+                resource_id=str(self.id),
+                relation="parent",
+                subject_type="resource_pool_group",
+                subject_id=str(old_parent_id),
+            )
+
+        # Update DB value
+        self._parent_resource_pool_group_id = new_parent_id
+
+        # Add new relation in SpiceDB
+        if new_parent_id is not None and self.id is not None:
+            spicedb_client.write_relationship(
+                resource_type="resource_pool_group",
+                resource_id=str(self.id),
+                relation="parent",
+                subject_type="resource_pool_group",
+                subject_id=str(new_parent_id),
+            )
