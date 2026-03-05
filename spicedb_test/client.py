@@ -143,8 +143,6 @@ class SpiceDBClient:
 
     def watch_relationships(self, start_token=None):
         request = WatchRequest()
-
-        print('start_token',start_token)
         if start_token:
             request.optional_start_cursor.token = start_token
 
