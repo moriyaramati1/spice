@@ -1,13 +1,16 @@
 from authzed.api.v1 import InsecureClient, WatchRequest, WriteRelationshipsRequest, SubjectReference, ObjectReference, \
-    Relationship, RelationshipUpdate, LookupSubjectsRequest, LookupResourcesRequest, Consistency
+    Relationship, RelationshipUpdate, LookupSubjectsRequest, LookupResourcesRequest, Consistency, WriteSchemaRequest
+
+from spicedb_test.spicedb_schema import schema
 
 
 class SpiceDBClient:
     def __init__(self):
-        self.client = None
+        self.client = self.init_spicedb_client()
+        self.client.WriteSchema(WriteSchemaRequest(schema=schema))
 
     def init_spicedb_client(self):
-        self.client = InsecureClient("localhost:50051", "spicy")
+        return InsecureClient("localhost:50051", "spicy")
 
     def build_consistency(self, mode="minimize_latency", zed_token=None):
         if mode == "fully_consistent":
@@ -149,5 +152,6 @@ class SpiceDBClient:
 
         for event in stream:
             yield event
+
 
 spicedb_client = SpiceDBClient()

@@ -81,34 +81,10 @@ def check_projects_permission_batch(
     request = CheckBulkPermissionsRequest(items=checks)
 
     results = spicedb_client.client.CheckBulkPermissions(request)
-    x = set()
+    permitted_results = set()
     for result in results.pairs:
         allowed = result.item.permissionship
         if allowed == CheckPermissionResponse.PERMISSIONSHIP_HAS_PERMISSION:
-            x.add(result.request.resource.object_id)
+            permitted_results.add(result.request.resource.object_id)
 
-    return x
-
-
-
-# s = time.perf_counter()
-# print(time.perf_counter())
-# get_projects(db.session, 149,'project','owner')
-# y  = time.perf_counter()
-# print(y-s)
-#
-# for batch_start in range(1, 300000):
-#         items_spice.append(CheckBulkPermissionsRequestItem(resource=ObjectReference(object_id=project_id(batch_start),
-#                                                                                     object_type="project"),
-#                                                            permission="edit",
-#                                                            subject=SubjectReference(object=ObjectReference(object_type="user",
-#                                                            object_id=user_id(322615))
-#                                                            )))
-#
-# print(datetime.now())
-# checks = CheckBulkPermissionsRequest(items=items_spice[:9999])
-#
-# # for result in response.pairs:
-# #     allowed = result.item.permissionship
-# #     if allowed == CheckPermissionResponse.PERMISSIONSHIP_HAS_PERMISSION:
-# #         results.append(result.request.resource.object_id)
+    return permitted_results
