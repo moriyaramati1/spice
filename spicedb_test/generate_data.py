@@ -1,9 +1,9 @@
-from authzed.api.v1 import  SubjectReference
-from authzed.api.v1.permission_service_pb2 import ImportBulkRelationshipsRequest
-from spicedb_test.client import spicedb_client
+import random
+from datetime import datetime
 
-
-
+from authzed.api.v1 import InsecureClient, WriteSchemaRequest, SubjectReference
+from authzed.api.v1.permission_service_pb2 import ImportBulkRelationshipsRequest, CheckBulkPermissionsRequestItem, \
+    CheckBulkPermissionsRequest, CheckPermissionResponse
 schema = """
     definition user {}
     definition usergroup {
@@ -34,6 +34,10 @@ schema = """
 """
 
 
+client_spice = InsecureClient("localhost:50051", "spicy")
+
+client_spice.WriteSchema(WriteSchemaRequest(schema=schema))
+print("write schema")
 
 import asyncio
 from authzed.api.v1 import Client, ObjectReference, Relationship
@@ -112,12 +116,13 @@ def request_iterator():
 
 # --- BULK IMPORT ---
 async def bulk_import():
+    client = client_spice
     # IMPORTANT: pass async generator to ImportBulkRelationships
-    response = spicedb_client.ImportBulkRelationships(request_iterator())
+    response = client.ImportBulkRelationships(request_iterator())
     print(f"Done importing: {response.num_loaded} relationships loaded")
 
 
 
 if __name__ == "__main__":
-    pass
-    # asyncio.run(bulk_import())
+    # pass
+    asyncio.run(bulk_import())
